@@ -34,7 +34,6 @@ goto menu
 :: ======= Option 1 =======
 :option1
 echo Running option1.py...
-cd tools
 python option1.py
 pause
 goto menu
@@ -42,7 +41,6 @@ goto menu
 :: ======= Option 2 =======
 :option2
 echo Running option2.py...
-cd tools
 python option2.py
 pause
 goto menu
@@ -50,7 +48,6 @@ goto menu
 :: ======= Option 3 =======
 :option3
 echo Running option3.py...
-cd tools
 start cmd /k python option3.py
 pause
 goto menu
@@ -58,7 +55,6 @@ goto menu
 :: ======= Option 4 =======
 :option4
 echo Running option4.py...
-cd tools
 python option4.py
 pause
 goto menu
@@ -66,7 +62,6 @@ goto menu
 :: ======= Option 5 =======
 :option5
 echo Running option5.py...
-cd tools
 python option5.py
 pause
 goto menu
@@ -74,7 +69,6 @@ goto menu
 :: ======= Option 6 =======
 :option6
 echo Running option6.py..
-cd tools.
 python option6.py
 pause
 goto menu
@@ -82,7 +76,6 @@ goto menu
 :: ======= Option 7 =======
 :option7
 echo Running option7.py...
-cd tools
 python option7.py
 pause
 goto menu
@@ -90,7 +83,6 @@ goto menu
 :: ======= Option 8 =======
 :option8
 echo Running option8.py...
-cd tools
 python option8.py
 pause
 goto menu
