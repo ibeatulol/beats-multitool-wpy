@@ -1,218 +1,155 @@
-#!/usr/bin/env python3
+import requests
+import json
+import tempfile
+import webbrowser
 import os
-import socket
-import concurrent.futures
-import time
-import shutil
-import sys
-import subprocess
-from typing import List
-
-RED = "\033[31m"
-GREEN = "\033[32m"
-YELLOW = "\033[33m"
-RESET = "\033[0m"
 
 ASCII_ART = r"""
- ________  ________  ________  ________   ________   _______   ________     
-|\   ____\|\   ____\|\   __  \|\   ___  \|\   ___  \|\  ___ \ |\   __  \    
-\ \  \___|\ \  \___|\ \  \|\  \ \  \\ \  \ \  \\ \  \ \   __/|\ \  \|\  \   
- \ \_____  \ \  \    \ \   __  \ \  \\ \  \ \  \\ \  \ \  \_|/_\ \   _  _\  
-  \|____|\  \ \  \____\ \  \ \  \ \  \\ \  \ \  \\ \  \ \  \_|\ \ \  \\  \| 
-    ____\_\  \ \_______\ \__\ \__\ \__\\ \__\ \__\\ \__\ \_______\ \__\\ _\ 
-   |\_________\|_______|\|__|\|__|\|__| \|__|\|__| \|__|\|_______|\|__|\|__|
-   \|_________|                                                             
-                                                                            
-                                                                            
+   ____   ____  ____           |  |   ____   ____ _____ _/  |_  ___________
+  / ___\_/ __ \/  _ \   ______ |  |  /  _ \_/ ___\\__  \\   __\/  _ \_  __ \
+ / /_/  >  ___(  <_> ) /_____/ |  |_(  <_> )  \___ / __ \|  | (  <_> )  | \/
+ \___  / \___  >____/          |____/\____/ \___  >____  /__|  \____/|__|
+/_____/      \/                                 \/     \/
+                                  by beat
 """
+FOOTER = "by beat"
 
-# Short list of commonly attacked / high-value ports
-PRIORITY_PORTS: List[int] = [
-    22, 21, 23, 25, 80, 443, 445, 3389, 3306, 1433, 1521,
-    5900, 5432, 6379, 27017, 137, 139, 8080, 8443, 69, 161,
-    5000, 2049, 10000
-]
+RED = "\033[31m"
+RESET = "\033[0m"
 
-def clear_console():
+def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def print_header():
-    try:
-        width = shutil.get_terminal_size().columns
-    except Exception:
-        width = 80
-    for line in ASCII_ART.splitlines():
-        print(RED + line.center(width) + RESET)
-    print(RED + "by beat".center(width) + RESET)
-    print()
+def print_ascii():
+    clear_screen()
+    lines = ASCII_ART.strip("\n").splitlines()
+    maxw = max(len(l) for l in lines)
+    centered_footer = FOOTER.center(maxw)
+    print(RED + "\n".join(lines) + "\n" + centered_footer + RESET)
 
-def resolve_host(hostname: str) -> str:
+def lookup_ip(ip):
     try:
-        for fam, _, _, _, sockaddr in socket.getaddrinfo(hostname, None):
-            if fam == socket.AF_INET:
-                return sockaddr[0]
-        return socket.gethostbyname(hostname)
+        if not ip or ip.strip() == "":
+            raise ValueError("Invalid IP: input required.")
+        url = f"http://ip-api.com/json/{ip}?fields=status,message,query,country,regionName,city,lat,lon,org,timezone"
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        if data.get("status") != "success":
+            raise ValueError("Invalid IP or query.")
+        return data
     except Exception as e:
-        raise RuntimeError(f"DNS resolution failed: {e}")
+        print(RED + f"Error looking up IP: {e}" + RESET)
+        return None
 
-def scan_port(addr: str, port: int, timeout: float) -> tuple[int, bool]:
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(timeout)
-    try:
-        res = s.connect_ex((addr, port))
-        try:
-            s.shutdown(socket.SHUT_RDWR)
-        except Exception:
-            pass
-        return port, (res == 0)
-    except Exception:
-        return port, False
-    finally:
-        try:
-            s.close()
-        except Exception:
-            pass
+HTML_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>IP Geo Locator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map {{ height: 100%; margin: 0; padding: 0; }}
+    #info {{
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      font-family: sans-serif;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 999;
+    }}
+  </style>
+</head>
+<body>
+  <div id="info">
+    <strong>IP:</strong> {ip}<br/>
+    <strong>Location:</strong> {location}<br/>
+    <strong>Org:</strong> {org}<br/>
+    <strong>Timezone:</strong> {timezone}<br/>
+    <strong>Coords:</strong> {lat}, {lon}
+  </div>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map').setView([{lat}, {lon}], 10);
+    L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors'
+    }}).addTo(map);
+    L.marker([{lat}, {lon}]).addTo(map)
+      .bindPopup("<b>{ip}</b><br>{location}")
+      .openPopup();
+  </script>
+</body>
+</html>
+"""
 
-def run_multitool_bat_and_exit():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    bat_path = os.path.join(script_dir, "multitool.bat")
-    if not os.path.isfile(bat_path):
-        print(RED + f"multitool.bat not found at {bat_path}. Exiting instead." + RESET)
-        sys.exit(0)
+def generate_map_html(data):
     try:
-        if os.name == "nt":
-            subprocess.Popen(["cmd", "/c", "start", "", bat_path], shell=False)
-        else:
-            subprocess.Popen([bat_path], shell=True)
+        ip = data.get("query", "")
+        city = data.get("city", "")
+        region = data.get("regionName", "")
+        country = data.get("country", "")
+        lat = data.get("lat", 0)
+        lon = data.get("lon", 0)
+        org = data.get("org", "—")
+        timezone = data.get("timezone", "—")
+        location = ", ".join(filter(None, [city, region, country]))
+        return HTML_TEMPLATE.format(
+            ip=ip,
+            location=location or "—",
+            org=org,
+            timezone=timezone,
+            lat=lat,
+            lon=lon
+        )
     except Exception as e:
-        print(RED + f"Failed to launch multitool.bat: {e}" + RESET)
-    sys.exit(0)
+        print(RED + f"Error generating map HTML: {e}" + RESET)
+        return None
 
-def choose_mode() -> str:
-    while True:
-        print()
-        print("Choose scan mode:")
-        print("  01) Full scan (all TCP ports 1-65535)")
-        print("  02) Most-hacked ports (priority list)")
-        choice = input("Type 01 or 02: ").strip()
-        if choice in ("01", "02"):
-            return choice
-        print(RED + "Invalid choice — type 01 or 02." + RESET)
-
-def print_status(port: int, is_open: bool):
-    if is_open:
-        # Open: only print the port with [+] in green
-        sys.stdout.write(GREEN + f"[+] {port}\n" + RESET)
-    else:
-        # Closed: print port with [-] in red
-        sys.stdout.write(RED + f"[-] {port}\n" + RESET)
-    sys.stdout.flush()
-
-def priority_scan(addr: str, threads: int, timeout: float) -> List[int]:
-    print(YELLOW + f"\nScanning priority ports ({len(PRIORITY_PORTS)} ports)..." + RESET)
-    found = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as ex:
-        futures = {ex.submit(scan_port, addr, p, timeout): p for p in PRIORITY_PORTS}
-        for fut in concurrent.futures.as_completed(futures):
-            port, is_open = fut.result()
-            print_status(port, is_open)
-            if is_open:
-                found.append(port)
-    return sorted(found)
-
-def full_scan(addr: str, threads: int, timeout: float, exclude: set) -> List[int]:
-    print(YELLOW + "\nScanning all remaining ports (this will print status for every port)..." + RESET)
-    CHUNK = 4096
-    found = []
-    all_ports = [p for p in range(1, 65536) if p not in exclude]
-    for i in range(0, len(all_ports), CHUNK):
-        chunk = all_ports[i:i+CHUNK]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as ex:
-            futures = {ex.submit(scan_port, addr, p, timeout): p for p in chunk}
-            for fut in concurrent.futures.as_completed(futures):
-                port, is_open = fut.result()
-                print_status(port, is_open)
-                if is_open:
-                    found.append(port)
-        time.sleep(0.15)
-    return sorted(found)
-
-def single_scan_flow():
-    clear_console()
-    print_header()
-
-    target = input("What IP do you want to scan? (default: 127.0.0.1): ").strip() or "127.0.0.1"
+def open_map_for_ip(ip_input):
     try:
-        addr = resolve_host(target)
+        data = lookup_ip(ip_input)
+        if data is None:
+            return
+        lat = data.get("lat")
+        lon = data.get("lon")
+        if not lat or not lon:
+            print(RED + "Error: No coordinates found." + RESET)
+            print(json.dumps(data, indent=2))
+            return
+        html = generate_map_html(data)
+        if html is None:
+            return
+        tmpdir = tempfile.mkdtemp(prefix="ip_map_")
+        html_path = os.path.join(tmpdir, "ip_map.html")
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html)
+        webbrowser.open(f"file://{html_path}")
+        print("Map opened in your browser.")
     except Exception as e:
-        print(RED + f"Error: {e}" + RESET)
-        return
-
-    print(f"Resolved {target} -> {addr}")
-
-    threads_input = input("Number of threads [default: 200]: ").strip()
-    try:
-        threads = int(threads_input) if threads_input else 200
-    except Exception:
-        threads = 200
-    if threads < 1:
-        threads = 200
-    if threads > 800:
-        print(YELLOW + "Thread count capped to 800." + RESET)
-        threads = 800
-
-    timeout_input = input("Connect timeout seconds [default: 0.5]: ").strip()
-    try:
-        timeout = float(timeout_input) if timeout_input else 0.5
-    except Exception:
-        timeout = 0.5
-
-    mode = choose_mode()
-
-    open_ports = []
-    start = time.time()
-
-    if mode == "02":
-        open_ports = priority_scan(addr, threads, timeout)
-    else:  # full scan
-        quick_found = priority_scan(addr, threads, timeout)
-        open_ports.extend(quick_found)
-        exclude = set(PRIORITY_PORTS)
-        more_found = full_scan(addr, threads, timeout, exclude)
-        open_ports = sorted(set(open_ports) | set(more_found))
-
-    elapsed = time.time() - start
-
-    print()
-    if open_ports:
-        print(GREEN + f"\nSummary — Open ports ({len(open_ports)}):" + RESET)
-        for p in sorted(open_ports):
-            sys.stdout.write(GREEN + f"[+] {p}\n" + RESET)
-    else:
-        print(RED + "No open TCP ports found." + RESET)
-
-    print()
-    print(f"Scan duration: {elapsed:.1f} seconds. Done.")
+        print(RED + f"Error opening map: {e}" + RESET)
 
 def main():
-    while True:
-        single_scan_flow()
-        # Only two choices: scan again (01) or exit and run multitool.bat (02)
+    try:
         while True:
-            print()
-            print("Options:")
-            print("  01) Scan again")
-            print("  02) Exit and run multitool.bat")
-            choice = input("Type 01 or 02 (default 01): ").strip() or "01"
-            if choice == "01":
+            print_ascii()
+            user = input("Enter IP to locate (or 'q' to quit): ").strip()
+            if user.lower() in ('q', 'quit', 'exit'):
                 break
-            if choice == "02":
-                run_multitool_bat_and_exit()
-            print(RED + "Invalid choice — type 01 or 02." + RESET)
+            if not user:
+                print(RED + "Error: You must enter an IP address." + RESET)
+                input("Press Enter to continue...")
+                continue
+            print(f"Looking up IP: {user}...")
+            open_map_for_ip(user)
+            input("Press Enter to continue...")
+    except Exception as e:
+        print(RED + f"Error in main loop: {e}" + RESET)
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\nUser cancelled. Exiting.")
-        sys.exit(1)
+    main()
