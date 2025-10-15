@@ -6,9 +6,9 @@ import shutil
 import time
 
 def clear_console():
-    if os.name == 'nt':  
+    if os.name == 'nt':
         os.system('cls')
-    else:  
+    else:
         os.system('clear')
     time.sleep(0.5)
 
@@ -80,28 +80,23 @@ def delete_multiple_webhooks():
     for url in webhook_urls:
         run(url)
 
-def open_new_cmd_window():
-    if os.name == "nt" and not os.environ.get("WEBHOOK_DELETER_OPEN"):
-        os.environ["WEBHOOK_DELETER_OPEN"] = "1"
-        os.system(f'start cmd /k python "{os.path.abspath(__file__)}"')
-        sys.exit()
-
 if __name__ == "__main__":
-    open_new_cmd_window()
-    
+    # Comment out or remove the following line to prevent opening a new CMD window
+    # open_new_cmd_window()
+
     resize_terminal_for_banner()
     print_slow(ASCII_ART, color=ANSI_RED, delay=FAST_DELAY)
 
     while True:
         print_white("\nOptions:")
-        print_white("1. Exit")
         print_white("2. Delete multiple webhooks at once")
-        choice = input("\033[97mEnter your choice (1/2): \033[0m").strip()
+        print_white("q. Quit")
+        choice = input("\033[97mEnter your choice (2/q): \033[0m").strip()
 
-        if choice == '1':
-            print_white("Goodbye!")
-            sys.exit()
-        elif choice == '2':
+        if choice == '2':
             delete_multiple_webhooks()
+        elif choice == 'q':
+            print_white("Exiting...")
+            sys.exit()
         else:
             print_red("Invalid choice. Please try again.")
