@@ -74,61 +74,70 @@ def webhookspam():
     clear()
     webhspamtitle()
 
-    print_text_slowly("Enter the WebHook you want to spam", color=ANSI_WHITE)
-    # Use plain ANSI colored prompt for input
-    print(ANSI_WHITE + "WebHook Link -> " + ANSI_RESET, end='', flush=True)
-    webhook = input()
+    while True:
+        print_text_slowly("Webhook link to spam or (q for quit):", color=ANSI_WHITE)
+        # Use plain ANSI colored prompt for input
+        print(ANSI_WHITE + "-> " + ANSI_RESET, end='', flush=True)
+        webhook = input().strip()
 
-    try:
-        requests.post(webhook, json={'content': ""})
-    except Exception:
-        print_text_slowly("[!] Your WebHook is invalid!", color=ANSI_WHITE)
-        time.sleep(1)
+        if webhook == 'q':
+            print_text_slowly("Exiting...", color=ANSI_WHITE)
+            break
+
+        try:
+            requests.post(webhook, json={'content': ""})
+        except Exception:
+            print_text_slowly("[!] Your WebHook is invalid!", color=ANSI_WHITE)
+            time.sleep(1)
+            clear()
+            webhspamtitle()
+            continue
+
+        print_text_slowly("\nEnter the message to spam", color=ANSI_WHITE)
+        print(ANSI_WHITE + "Message -> " + ANSI_RESET, end='', flush=True)
+        message = input()
+
+        print_text_slowly("\nAmount of messages to send", color=ANSI_WHITE)
+        print(ANSI_WHITE + "Amount -> " + ANSI_RESET, end='', flush=True)
+        try:
+            amount = int(input())
+        except ValueError:
+            print_text_slowly("[!] Invalid amount. Returning to main.", color=ANSI_WHITE)
+            time.sleep(1.5)
+            main()
+            return
+
+        def spam():
+            try:
+                requests.post(webhook, json={'content': message})
+            except Exception as e:
+                # Show error as white text
+                print_text_slowly(f"Error: {e}", color=ANSI_WHITE)
+
+        for _ in range(amount):
+            threading.Thread(target=spam, daemon=True).start()
+            time.sleep(0.05)
+
         clear()
-        main()
-        return
+        webhspamtitle()
+        print_text_slowly("[!] Webhook has been correctly spammed", color=ANSI_WHITE)
+        print(ANSI_WHITE + "\nPress ENTER to exit" + ANSI_RESET, end='', flush=True)
+        input()
 
-    print_text_slowly("\nEnter the message to spam", color=ANSI_WHITE)
-    print(ANSI_WHITE + "Message -> " + ANSI_RESET, end='', flush=True)
-    message = input()
+        # Check if the input is 'q' to quit or run gui.py
+        while True:
+            print(ANSI_WHITE + "Type 'q' to quit or press ENTER to continue: " + ANSI_RESET, end='', flush=True)
+            choice = input().strip()
+            if choice == 'q':
+                print_text_slowly("Exiting...", color=ANSI_WHITE)
+                return
+            elif choice == '':
+                try:
+                    os.system('python gui.py')
+                except Exception as e:
+                    print_text_slowly(f"Error: {e}", color=ANSI_WHITE)
+                break
 
-    print_text_slowly("\nAmount of messages to send", color=ANSI_WHITE)
-    print(ANSI_WHITE + "Amount -> " + ANSI_RESET, end='', flush=True)
-    try:
-        amount = int(input())
-    except ValueError:
-        print_text_slowly("[!] Invalid amount. Returning to main.", color=ANSI_WHITE)
-        time.sleep(1.5)
-        main()
-        return
-
-    def spam():
-        try:
-            requests.post(webhook, json={'content': message})
-        except Exception as e:
-            # Show error as white text
-            print_text_slowly(f"Error: {e}", color=ANSI_WHITE)
-
-    for _ in range(amount):
-        threading.Thread(target=spam, daemon=True).start()
-        time.sleep(0.05)
-
-    clear()
-    webhspamtitle()
-    print_text_slowly("[!] Webhook has been correctly spammed", color=ANSI_WHITE)
-    print(ANSI_WHITE + "\nPress ENTER to exit" + ANSI_RESET, end='', flush=True)
-    input()
-    # Try to open multitool.bat if present (best-effort)
-    if os.name == "nt":
-        try:
-            os.startfile("multitool.bat")
-        except Exception:
-            pass
-    else:
-        try:
-            os.system("xdg-open multitool.bat >/dev/null 2>&1 &")
-        except Exception:
-            pass
     main()
 
 if __name__ == "__main__":
