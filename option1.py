@@ -7,9 +7,9 @@ import time
 import random
 
 def clear_console():
-    if os.name == 'nt':  
+    if os.name == 'nt':
         os.system('cls')
-    else:  
+    else:
         os.system('clear')
     time.sleep(0.5)
 
@@ -63,18 +63,14 @@ HEADERS = {
 TIMEOUT = 7
 MAX_RETRIES = 3
 
-
 def print_white(text=""):
     print("\033[97m" + text + "\033[0m")
-
 
 def print_green(text=""):
     print("\033[32m" + text + "\033[0m")
 
-
 def print_red(text=""):
     print("\033[31m" + text + "\033[0m")
-
 
 def check_url(url, retries=MAX_RETRIES):
     try:
@@ -89,7 +85,6 @@ def check_url(url, retries=MAX_RETRIES):
             return check_url(url, retries - 1)
         else:
             return False, None, None, str(e)
-
 
 def check_username_on_sites(username):
     print_white(f"\nChecking username: '{username}'\n")
@@ -131,7 +126,6 @@ def check_username_on_sites(username):
     else:
         print_white("\nSome profiles may exist based on HTTP responses above.")
 
-
 def show_menu_and_get_choice():
     clear_console()
     print_red(ASCII_ART)
@@ -142,7 +136,6 @@ def show_menu_and_get_choice():
     except (KeyboardInterrupt, EOFError):
         print()
         return "2"
-
 
 def main():
     while True:
@@ -163,12 +156,12 @@ def main():
 
         elif choice == "2":
             print_white("Goodbye from Beat.")
-            sys.exit(0)
+            break
 
         else:
             print_red("Invalid choice — enter 1 or 2.")
             input("\nPress Enter to return to the menu...\033[0m")
 
-
 if __name__ == "__main__":
     main()
+    input("\nPress Enter to exit...\033[0m")
